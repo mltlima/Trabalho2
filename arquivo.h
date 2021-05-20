@@ -20,7 +20,8 @@ pthread_mutex_t mutex;
 pthread_cond_t cond_leit, cond_escr;
 
 
-void delay();
 void * leitor (void * arg);
 void * escritor (void * arg);
+int lerTemperatura(int id);
+void alarme();
 int medirTemperatura();
