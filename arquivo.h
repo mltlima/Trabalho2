@@ -4,8 +4,8 @@
 #include<stdlib.h>
 #include<unistd.h>
 
-#define LEITORES 3
-#define ESCRITORES 3
+int LEITORES;
+int ESCRITORES;
 
 
 typedef struct{
@@ -20,8 +20,8 @@ pthread_mutex_t mutex;
 pthread_cond_t cond_leit, cond_escr;
 
 
-void * leitor (void * arg);
-void * escritor (void * arg);
+void * atuadores (void * arg);
+void * sensores (void * arg);
 int lerTemperatura(int id);
 void alarme();
 int medirTemperatura();

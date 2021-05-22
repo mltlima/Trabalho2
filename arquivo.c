@@ -1,3 +1,9 @@
+/**
+ * Miguel Lima Tavares
+ * DRE 119161571
+ * Trabalho 2 Computacao Concorrente
+ */
+
 #include<pthread.h>
 #include<time.h>
 #include<stdio.h>
@@ -9,18 +15,18 @@
 //variaveis do problema
 int leitores_count = 0; //contador de threads lendo
 int escritores_count = 0; //contador de threads escrevendo
-int leituras = 0;
-int escritas = 0;
-int somatorio = 0;
-int media = 0;
-unsigned int shared_var = 0;
+int leituras = 0; //total de leituras
+int escritas = 0; //total de escritas
+int somatorio = 0; //somatorio total temperaturas lidas
+int media = 0; //media das temeperaturas lidas
 
-medicao temperaturas[60];
-medicao ultimasTemperaturas[15];
-int in=0;
-int out=0;
-int ultimaTemperatura=0;
+medicao temperaturas[60]; //guarda as ultimas 60 leituras de temperatura
+medicao ultimasTemperaturas[15]; //guarda as ultimas 15 leituras de temperatura
 
+
+
+/*---------------------------------------------------------------------------------------*/
+//gera um numero aleatorio para temperatura entre 25 e 40
 int medirTemperatura(int id){
     // numero aleatorio (max_number + 1 - minimum_number) + minimum_number
     srand(escritas);//Usa a quantidade de leituras como seed
@@ -40,6 +46,8 @@ int medirTemperatura(int id){
 }
 
 
+/*---------------------------------------------------------------------------------------*/
+//le a temperatura somante do sensor com mesmo id do leitor 
 int lerTemperatura(int id){
 
     int temperaturaLida = 0;
@@ -48,7 +56,6 @@ int lerTemperatura(int id){
     for (int i = ((escritas-LEITORES) % 60) ; i < leituras+LEITORES; i++){
         if (temperaturas[i].idSensor == id){
             //leitor com mesmo sensor do escritor achado
-            //printf("teste ---------> %d \n", ultimasTemperaturas[i].temperatura);
             temperaturaLida = temperaturas[i].temperatura;
             //passa o id da leitura
             temperaturas[i].idLeitura = leituras;
@@ -62,8 +69,12 @@ int lerTemperatura(int id){
 }
 
 
+/*---------------------------------------------------------------------------------------*/
+//alerta se a temperatura condizer com os requisitos:
+//ultimas 15 leituras 5 sao acima de 35 ALERTA AMARELO
+//ultimas 5 leituras sao acima de 35 ALERTA VERMELHO
 void alarme(){
-    //int porque = (escritas-15-LEITORES);
+
     int id = (((escritas-15-LEITORES) % 15) + 15) % 15;
 
     int amarelo = 0;
@@ -71,8 +82,6 @@ void alarme(){
 
     for (int i = 1 ; i <  16; i++){
 
-        //printf("id         %d\n",id);
-        //printf("Teste alarme ---------------> %d\n",ultimasTemperaturas[id].temperatura);
         id = (((escritas-15-LEITORES+i) % 15)+15)%15 ;  
         int temperatura = ultimasTemperaturas[id].temperatura; 
 
@@ -96,19 +105,20 @@ void alarme(){
 }
 
 
+/*---------------------------------------------------------------------------------------*/
 //thread leitora
-void * leitor (void * arg) {
-    //int *id = (int *) arg;
+void * atuadores (void * arg) {
+    
     int id = *((int*)arg);
     int temperatura;
 
-    for(int i = 0; i >= 0; i++){
+    for(int i = 0; i >= 0; i++){//loop infinito
         
-        /* Enter critical section: */
+        //entra secao critica
         pthread_mutex_lock(&mutex);
         {
             pthread_cond_wait(&cond_leit, &mutex);
-            //sleep(2);
+            sleep(2);
             leitores_count ++;
             temperatura = lerTemperatura(id);
             leituras++;
@@ -129,22 +139,12 @@ void * leitor (void * arg) {
         if (leitores_count == ESCRITORES){
         pthread_mutex_lock(&mutex);
             alarme();
+            //libera os sensores
             pthread_cond_broadcast(&cond_escr);
             leitores_count = 0;
         pthread_mutex_unlock(&mutex);
         }
         
-
-        /* Exit critical section: */
-        /*
-        pthread_mutex_lock(&mutex);
-        {
-            escritores_count = 0;
-            pthread_cond_broadcast(&cond_escr);
-            pthread_cond_signal(&cond_leit);
-        }
-        pthread_mutex_unlock(&mutex);
-        */
     }
     free(arg);
     pthread_exit(0);
@@ -152,57 +152,46 @@ void * leitor (void * arg) {
   
 }
 
+
+/*---------------------------------------------------------------------------------------*/
 //thread escritora
-void * escritor (void * arg) {
+void * sensores (void * arg) {
 
     int id = *((int*)arg);
     int temperatura = 0;
-    //int *id = (int *) arg;
+    
     for(int i = 0; i >= 0; i++){
 
         
        
-        /* Enter critical section: */
+        //entra na secao critica
         pthread_mutex_lock(&mutex);
         {
-            //sleep(1);
+            sleep(1);
             temperatura = medirTemperatura(id);
             escritas++;
-            //count++;
             escritores_count++;
-            shared_var++;
-            printf("ESCRITOR %i | Temperatura: %i | Writes count: %i ||| Ciclo: %i\n",
-                id, temperatura, escritores_count, i);   
-            //sleep(1);
+
+            printf("ESCRITOR %i | Temperatura: %i | Media: %i ||| Ciclo: %i\n",
+                id, temperatura, media, i);   
+            //lock esperando a ultima thread
             if(escritores_count != ESCRITORES)
                 pthread_cond_wait(&cond_escr, &mutex);
             
         }
         pthread_mutex_unlock(&mutex);
 
-        /* Critical section, Escrita: */
-        
-            //printf("ESCRITOR %i | Value: %i | Writes count: %i ||| Cycle: %i of %i\n",
-            //    id, shared_var, escritores_count, i, ESCRITORES);
-        //shared_var++;
-        //printf("ESCRITOR %i | Value: %i | Writes count: %i ||| Cycle: %i of %i\n",
-        //       id, shared_var, escritores_count, i, ESCRITORES);
-
-        /* Exit critical section: */
-        {
-            //escritores_count--;
-            if(escritores_count == 3)
-            {   
-                pthread_mutex_lock(&mutex);
-                printf("condicao alcancada\n");
-                //pthread_cond_signal(&cond_leit);
-                //pthread_cond_broadcast(&cond_escr);
-                pthread_cond_broadcast(&cond_leit);
-                escritores_count = 0;
-                pthread_cond_wait(&cond_escr, &mutex);
-                pthread_mutex_unlock(&mutex);
-            }
+        //espera chegar na ultima thread para liberar os atuadores
+        if(escritores_count == ESCRITORES)
+        {   
+            pthread_mutex_lock(&mutex);
+            printf("condicao alcancada\n");
+            pthread_cond_broadcast(&cond_leit);
+            escritores_count = 0;
+            pthread_cond_wait(&cond_escr, &mutex);
+            pthread_mutex_unlock(&mutex);
         }
+        
     }
     free(arg);
     pthread_exit(0);
