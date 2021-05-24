@@ -6,5 +6,5 @@
 ```
 Para compilar o programa:
 gcc -g -Wall -pthread main.c arquivo.c -lpthread -o main
-./main
+./main <numero de sensores>
 ```
