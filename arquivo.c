@@ -33,7 +33,6 @@ int medirTemperatura(int id){
 	int temperatura = rand() % (40 + 1 - 25) + 25;
 
     medicao novaTemperatura;
-    novaTemperatura.idLeitura = escritas;
     novaTemperatura.temperatura = temperatura;
     novaTemperatura.idSensor = id;
 
@@ -58,7 +57,7 @@ int lerTemperatura(int id){
             //leitor com mesmo sensor do escritor achado
             temperaturaLida = temperaturas[i].temperatura;
             //passa o id da leitura
-            temperaturas[i].idLeitura = leituras;
+            temperaturas[i].idLeitura = id;
             break;
         }
         
